@@ -73,16 +73,22 @@ void DeepSleepComponent::deep_sleep_() {
     if (this->wakeup_pin_mode_ == WAKEUP_PIN_MODE_INVERT_WAKEUP && this->wakeup_pin_->digital_read()) {
       level = !level;
     }
-    esp_sleep_enable_ext0_wakeup(gpio_num_t(this->wakeup_pin_->get_pin()), level);
+    #if defined(USE_ESP32_VARIANT_ESP32H2)
+      esp_sleep_enable_ext0_wakeup(gpio_num_t(this->wakeup_pin_->get_pin()), level ? ESP_EXT1_WAKEUP_ANY_HIGH : ESP_EXT1_WAKEUP_ANY_LOW);
+    #else
+      esp_sleep_enable_ext0_wakeup(gpio_num_t(this->wakeup_pin_->get_pin()), level);
+    #endif
   }
   if (this->ext1_wakeup_.has_value()) {
     esp_sleep_enable_ext1_wakeup(this->ext1_wakeup_->mask, this->ext1_wakeup_->wakeup_mode);
   }
 
-  if (this->touch_wakeup_.has_value() && *(this->touch_wakeup_)) {
-    esp_sleep_enable_touchpad_wakeup();
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-  }
+  #if !defined(USE_ESP32_VARIANT_ESP32H2)
+    if (this->touch_wakeup_.has_value() && *(this->touch_wakeup_)) {
+      esp_sleep_enable_touchpad_wakeup();
+      esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+    }
+  #endif
 #endif
 #if defined(USE_ESP32_VARIANT_ESP32C3) || defined(USE_ESP32_VARIANT_ESP32C6)
   if (this->sleep_duration_.has_value())
@@ -96,7 +102,11 @@ void DeepSleepComponent::deep_sleep_() {
                                       static_cast<esp_deepsleep_gpio_wake_up_mode_t>(level));
   }
 #endif
-  esp_deep_sleep_start();
+#if defined(USE_ESP32_VARIANT_ESP32H2)
+  esp_zb_sleep_now();
+#else
+  esp_deep_sleep_start();  
+#endif
 }
 
 }  // namespace deep_sleep
