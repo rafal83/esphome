@@ -7,6 +7,12 @@
 
 #ifdef USE_ESP32
 #include <esp_sleep.h>
+#if defined(USE_ESP32_VARIANT_ESP32H2)
+  #include <esp_zigbee_core.h>
+  #include <esp_pm.h>
+  #include <esp_private/esp_clk.h>
+  #include <driver/rtc_io.h>
+#endif
 #endif
 
 #ifdef USE_TIME
